@@ -46,12 +46,14 @@
   },
   "dependencies": {
     "async": "^2.5.0",
+    "body-parser": "^1.17.2",
     "crawler": "^1.0.5",
     "eslint-plugin-jsx-a11y": "^3.0.2",
     "eslint-plugin-react": "^6.10.3",
     "express": "^4.15.4",
     "path": "^0.12.7",
     "puppeteer": "^0.9.0",
+    "sanitize-filename": "^1.6.1",
     "sitemap-generator": "^7.1.2",
     "sitemap-stream-parser": "^1.2.2",
     "sitemapper": "^2.1.13"

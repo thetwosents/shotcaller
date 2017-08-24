@@ -13,10 +13,14 @@ const SitemapGenerator = require('sitemap-generator'); // https://www.npmjs.com/
 // Utilities
 const Async = require('async');
 const path = require('path');
+const fs = require('fs');
+const sanitize = require("sanitize-filename");
 
 // Express
+const bodyParser = require('body-parser');
 const express = require('express')
 const app = express()
+app.use(bodyParser.json())
 
 // Init globals
 let browser;
@@ -34,14 +38,25 @@ let page;
 
 app.post('/generateSitemap', (req,res) => {
 
+	let projName = req.body.name;
+	let depth = parseInt(req.body.depth) || 2;
+	let url = req.body.url;
+	let screenshots = req.body.screenshots || false;
+
+	let dir = sanitize(projName);
+
+	if (!fs.existsSync(dir)){
+	    fs.mkdirSync('screenshots/' + dir);
+	};
+
 	let arr = {
 		sites: [],
 		stats: ''
 	};
 
-	const generator = SitemapGenerator('http://www.ffplaw.com', {
+	const generator = SitemapGenerator(url, {
 	  stripQuerystring: false,
-	  crawlerMaxDepth: 2
+	  crawlerMaxDepth: depth
 	});
 
 	generator.on('add', (url) => {
@@ -51,7 +66,9 @@ app.post('/generateSitemap', (req,res) => {
 
 	generator.on('done', (stats) => {
 		arr.stats = stats;
-		createScreenshots(arr.sites);
+		if (screenshots) {
+			createScreenshots(arr.sites);
+		}
 	  res.send(arr);
 	});
 
