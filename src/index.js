@@ -3,6 +3,7 @@
 const puppeteer = require('puppeteer');
 const devices = require('puppeteer/DeviceDescriptors');
 const iPhone = devices['iPhone 6'];
+const iPad = devices['iPad Pro'];
 
 // Sitemap tools
 const Crawler = require("crawler");
@@ -27,6 +28,7 @@ let browser;
 let page;
 let projName;
 let dir;
+let screenshotParams;
 
 (async () => {
   
@@ -44,6 +46,8 @@ app.post('/generateSitemap', (req,res) => {
   let depth = parseInt(req.body.depth) || 2;
   let url = req.body.url;
   let screenshots = req.body.screenshots || false;
+  
+  screenshotParams = req.body.screenshots;
 
   dir = sanitize(projName);
 
@@ -112,18 +116,54 @@ async function makeScreenshot(url) {
     });
     c.queue(url);
 
-    page.setViewport({
-      width: 1440,
-      height:700
-    });
-    // await page.emulate(iPhone);
     await page.goto(url, {waitUntil: 'networkidle'});
-    await page.screenshot({
-      path: 'screenshots/' + dir + '/' + index +'.jpeg',
-      type: 'jpeg',
-      quality: 75,
-      fullPage: true
-    });
+    
+    if(screenshotParams.includes('desktop')) {
+	    if (!fs.existsSync('screenshots/' + dir + '/' + 'desktop')) {
+	    	fs.mkdirSync('screenshots/' + dir + '/' + 'desktop');	
+	    }
+	    
+	    page.setViewport({
+	      width: 1440,
+	      height:700
+	    });
+
+	    await page.screenshot({
+	      path: 'screenshots/' + dir + '/desktop/' + index +'.jpeg',
+	      type: 'jpeg',
+	      quality: 75,
+	      fullPage: true
+	    });
+	}
+	
+	if(screenshotParams.includes('mobile')) {
+	    if (!fs.existsSync('screenshots/' + dir + '/' + 'mobile')) {
+	    	fs.mkdirSync('screenshots/' + dir + '/' + 'mobile');	
+	    }
+	    
+	    await page.emulate(iPhone);
+	    await page.screenshot({
+	      path: 'screenshots/' + dir + '/mobile/' + index +'.jpeg',
+	      type: 'jpeg',
+	      quality: 75,
+	      fullPage: true
+	    });
+	}
+	
+	if(screenshotParams.includes('tablet')) {
+	    if (!fs.existsSync('screenshots/' + dir + '/' + 'tablet')) {
+	    	fs.mkdirSync('screenshots/' + dir + '/' + 'tablet');	
+	    }
+	    
+	    await page.emulate(iPad);
+	    await page.screenshot({
+	      path: 'screenshots/' + dir + '/tablet/' + index +'.jpeg',
+	      type: 'jpeg',
+	      quality: 75,
+	      fullPage: true
+	    });
+	}
+	
   }
 }
 
