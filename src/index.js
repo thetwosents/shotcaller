@@ -3,7 +3,7 @@
 const puppeteer = require('puppeteer');
 const devices = require('puppeteer/DeviceDescriptors');
 const iPhone = devices['iPhone 6'];
-const iPad = devices['iPad Pro'];
+const iPad = devices['iPad Mini'];
 
 // Sitemap tools
 const Crawler = require("crawler");
@@ -123,13 +123,13 @@ async function makeScreenshot(url) {
 	    	fs.mkdirSync('screenshots/' + dir + '/' + 'desktop');	
 	    }
 	    
-	    page.setViewport({
+	    await page.setViewport({
 	      width: 1440,
 	      height:700
 	    });
 
 	    await page.screenshot({
-	      path: 'screenshots/' + dir + '/desktop/' + index +'.jpeg',
+	      path: 'screenshots/' + dir + '/desktop/' + sanitize(index) +'.jpeg',
 	      type: 'jpeg',
 	      quality: 75,
 	      fullPage: true
@@ -143,7 +143,7 @@ async function makeScreenshot(url) {
 	    
 	    await page.emulate(iPhone);
 	    await page.screenshot({
-	      path: 'screenshots/' + dir + '/mobile/' + index +'.jpeg',
+	      path: 'screenshots/' + dir + '/mobile/' + sanitize(index) +'.jpeg',
 	      type: 'jpeg',
 	      quality: 75,
 	      fullPage: true
@@ -157,7 +157,7 @@ async function makeScreenshot(url) {
 	    
 	    await page.emulate(iPad);
 	    await page.screenshot({
-	      path: 'screenshots/' + dir + '/tablet/' + index +'.jpeg',
+	      path: 'screenshots/' + dir + '/tablet/' + sanitize(index) +'.jpeg',
 	      type: 'jpeg',
 	      quality: 75,
 	      fullPage: true
