@@ -70,6 +70,7 @@ app.post('/generateSitemap', (req,res) => {
 
   generator.on('done', (stats) => {
     arr.stats = stats;
+    arr.sites.sort();
     if (screenshots) {
       createScreenshots(arr.sites);
     }
@@ -99,15 +100,14 @@ async function makeScreenshot(url) {
   } else {
     var c = new Crawler({
       maxConnections : 10,
-      // This will be called for each crawled page 
       callback : function (error, res, done) {
-          if(error){
-              console.log(error);
-          }else{
-              var $ = res.$;
-              index = $("title").text();
-          }
-          done();
+        if(error){
+          console.log(error);
+        }else{
+          var $ = res.$;
+          index = $("title").text();
+        }
+        done();
       }
     });
     c.queue(url);
