@@ -7,7 +7,7 @@ const iPhone = devices['iPhone 6'];
 // Sitemap tools
 const Crawler = require("crawler");
 const SitemapStreams = require('sitemap-stream-parser');
-import Sitemapper from 'sitemapper';
+const Sitemapper = require('sitemapper');
 const SitemapGenerator = require('sitemap-generator'); // https://www.npmjs.com/package/sitemap-generator
 
 // Utilities
@@ -49,81 +49,39 @@ app.post('/generateSitemap', (req,res) => {
 
   if (!fs.existsSync('screenshots/' + dir)){
     fs.mkdirSync('screenshots/' + dir);
-
-    let arr = {
-      sites: [],
-      stats: ''
-    };
-
-    const generator = SitemapGenerator(url, {
-      stripQuerystring: false,
-      crawlerMaxDepth: depth
-    });
-
-    generator.on('add', (url) => {
-      console.log('URL added', url);
-      arr.sites.push(url);
-    });
-
-    generator.on('done', (stats) => {
-      arr.stats = stats;
-      if (screenshots) {
-        createScreenshots(arr.sites);
-      }
-      res.send(arr);
-    });
-
-    generator.on('ignore', (url) => {
-      console.log('ignored',url)
-    });
-
-    generator.start();
   } else {
-    res.send('Please select another project name, this one already exists');
+
   }  
+
+  let arr = {
+    sites: [],
+    stats: ''
+  };
+
+  const generator = SitemapGenerator(url, {
+    stripQuerystring: false,
+    crawlerMaxDepth: depth
+  });
+
+  generator.on('add', (url) => {
+    console.log('URL added', url);
+    arr.sites.push(url);
+  });
+
+  generator.on('done', (stats) => {
+    arr.stats = stats;
+    if (screenshots) {
+      createScreenshots(arr.sites);
+    }
+    res.send(arr);
+  });
+
+  generator.on('ignore', (url) => {
+    console.log('ignored',url)
+  });
+
+  generator.start();
 });
-
-// app.post('/useSitemap', (req,res) => {
-
-//  let baseUrl = 'http://www.corner103.com';
-
-//  let arr = [];
-
-//  SitemapStreams.parseSitemaps('http://www.corner103.com/index.cfm?method=pages.searchEngineSiteMap', (url) => { arr.push(url)}, (err,sitemaps) => {
-//    res.send(arr);
-//  });
-// });
-
-// app.post('/getBySitemap', (req,res) => {
-  
-//   const Site = new Sitemapper({
-//    url: 'http://www.corner103.com/index.cfm?method=pages.searchEngineSiteMap',
-//    timeout: 15000, // 15 seconds
-//  });
-
-//  Site.fetch()
-//    .then(data => {
-//        Async.eachOfSeries(data.sites, makeScreenshot, (err,results) => {
-//          console.log(err);
-//          console.log(results);
-//          browser.close();
-//          res.send(results);
-//        });
-
-//    })
-//    .catch(error => {
-//      console.log(error);
-//      res.send(error);
-//    });
-// })
-
-app.post('/', function (req, res) {
-  res.send('Got a POST request')
-})
-
-app.listen(3000, function () {
-  console.log('Example app listening on port 3000!')
-})
 
 function createScreenshots(arr) {
   console.log('Current job ' + arr.length + ' screenshots to be created');
@@ -168,3 +126,11 @@ async function makeScreenshot(url) {
     });
   }
 }
+
+app.post('/', function (req, res) {
+  res.send('Got a POST request')
+})
+
+app.listen(3000, function () {
+  console.log('Example app listening on port 3000!')
+})
