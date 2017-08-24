@@ -29,9 +29,9 @@ let projName;
 let dir;
 
 (async () => {
-	
-	browser = await puppeteer.launch({
-  	ignoreHTTPSErrors: true
+  
+  browser = await puppeteer.launch({
+    ignoreHTTPSErrors: true
   });
 
   page = await browser.newPage();
@@ -40,82 +40,81 @@ let dir;
 
 app.post('/generateSitemap', (req,res) => {
 
-	projName = req.body.name;
-	let depth = parseInt(req.body.depth) || 2;
-	let url = req.body.url;
-	let screenshots = req.body.screenshots || false;
+  projName = req.body.name;
+  let depth = parseInt(req.body.depth) || 2;
+  let url = req.body.url;
+  let screenshots = req.body.screenshots || false;
 
-	dir = sanitize(projName);
+  dir = sanitize(projName);
 
-	if (!fs.existsSync(dir)){
-	    fs.mkdirSync('screenshots/' + dir);
-	} else {
-		res.send('Please select another project name, this one already exists');
-	}
+  if (!fs.existsSync('screenshots/' + dir)){
+    fs.mkdirSync('screenshots/' + dir);
 
-	let arr = {
-		sites: [],
-		stats: ''
-	};
+    let arr = {
+      sites: [],
+      stats: ''
+    };
 
-	const generator = SitemapGenerator(url, {
-	  stripQuerystring: false,
-	  crawlerMaxDepth: depth
-	});
+    const generator = SitemapGenerator(url, {
+      stripQuerystring: false,
+      crawlerMaxDepth: depth
+    });
 
-	generator.on('add', (url) => {
-		console.log('URL added', url);
-		arr.sites.push(url);
-	});
+    generator.on('add', (url) => {
+      console.log('URL added', url);
+      arr.sites.push(url);
+    });
 
-	generator.on('done', (stats) => {
-		arr.stats = stats;
-		if (screenshots) {
-			createScreenshots(arr.sites);
-		}
-	  res.send(arr);
-	});
+    generator.on('done', (stats) => {
+      arr.stats = stats;
+      if (screenshots) {
+        createScreenshots(arr.sites);
+      }
+      res.send(arr);
+    });
 
-	generator.on('ignore', (url) => {
-		console.log('ignored',url)
-	});
+    generator.on('ignore', (url) => {
+      console.log('ignored',url)
+    });
 
-	generator.start();
-
+    generator.start();
+  } else {
+    res.send('Please select another project name, this one already exists');
+  }  
 });
 
 // app.post('/useSitemap', (req,res) => {
 
-// 	let baseUrl = 'http://www.corner103.com';
+//  let baseUrl = 'http://www.corner103.com';
 
-// 	let arr = [];
+//  let arr = [];
 
-// 	SitemapStreams.parseSitemaps('http://www.corner103.com/index.cfm?method=pages.searchEngineSiteMap', (url) => { arr.push(url)}, (err,sitemaps) => {
-// 		res.send(arr);
-// 	});
+//  SitemapStreams.parseSitemaps('http://www.corner103.com/index.cfm?method=pages.searchEngineSiteMap', (url) => { arr.push(url)}, (err,sitemaps) => {
+//    res.send(arr);
+//  });
 // });
 
 // app.post('/getBySitemap', (req,res) => {
   
 //   const Site = new Sitemapper({
-// 	  url: 'http://www.corner103.com/index.cfm?method=pages.searchEngineSiteMap',
-// 	  timeout: 15000, // 15 seconds
-// 	});
+//    url: 'http://www.corner103.com/index.cfm?method=pages.searchEngineSiteMap',
+//    timeout: 15000, // 15 seconds
+//  });
 
-// 	Site.fetch()
-// 	  .then(data => {
-// 	  		Async.eachOfSeries(data.sites, makeScreenshot, (err,results) => {
-// 	  			console.log(err);
-// 	  			console.log(results);
-// 	  			browser.close();
-// 	  			res.send(results);
-// 	  		});
+//  Site.fetch()
+//    .then(data => {
+//        Async.eachOfSeries(data.sites, makeScreenshot, (err,results) => {
+//          console.log(err);
+//          console.log(results);
+//          browser.close();
+//          res.send(results);
+//        });
 
-// 	  })
-// 	  .catch(error => {
-// 	  	console.log(error);
-// 	  	res.send(error);
-// 	  });
+//    })
+//    .catch(error => {
+//      console.log(error);
+//      res.send(error);
+//    });
 // })
 
 app.post('/', function (req, res) {
@@ -127,41 +126,45 @@ app.listen(3000, function () {
 })
 
 function createScreenshots(arr) {
-	console.log('Current job ' + arr.length + ' screenshots to be created');
-	
-	Async.eachOfSeries(arr, makeScreenshot, (err,results) => {
-			console.log(err);
-			console.log('Created ' + arr.length + ' screenshots');
-	});
+  console.log('Current job ' + arr.length + ' screenshots to be created');
+  
+  Async.eachOfSeries(arr, makeScreenshot, (err,results) => {
+    console.log(err);
+    console.log('Created ' + arr.length + ' screenshots');
+  });
 } 
 
 async function makeScreenshot(url) {
-	var index;
-	if (path.extname(url) === '.pdf') {
+  let index;
+  if (path.extname(url) === '.pdf') {
 
-	} else {
-		var c = new Crawler({
-	    maxConnections : 10,
-	    // This will be called for each crawled page 
-	    callback : function (error, res, done) {
-	        if(error){
-	            console.log(error);
-	        }else{
-	            var $ = res.$;
-	            index = $("title").text();
-	        }
-	        done();
-	    }
-		});
-		c.queue(url);
-	  
-	  await page.emulate(iPhone);
-		await page.goto(url, {waitUntil: 'networkidle'});
-		await page.screenshot({
-	  	path: 'screenshots/' + dir + '/' + index +'.jpeg',
-	  	type: 'jpeg',
-	  	quality: 75,
-	  	fullPage: true
-	  });
-	}
+  } else {
+    var c = new Crawler({
+      maxConnections : 10,
+      // This will be called for each crawled page 
+      callback : function (error, res, done) {
+          if(error){
+              console.log(error);
+          }else{
+              var $ = res.$;
+              index = $("title").text();
+          }
+          done();
+      }
+    });
+    c.queue(url);
+
+    page.setViewport({
+      width: 1440,
+      height:700
+    });
+    // await page.emulate(iPhone);
+    await page.goto(url, {waitUntil: 'networkidle'});
+    await page.screenshot({
+      path: 'screenshots/' + dir + '/' + index +'.jpeg',
+      type: 'jpeg',
+      quality: 75,
+      fullPage: true
+    });
+  }
 }
