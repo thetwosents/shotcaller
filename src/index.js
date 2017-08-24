@@ -25,6 +25,8 @@ app.use(bodyParser.json())
 // Init globals
 let browser;
 let page;
+let projName;
+let dir;
 
 (async () => {
 	
@@ -38,16 +40,18 @@ let page;
 
 app.post('/generateSitemap', (req,res) => {
 
-	let projName = req.body.name;
+	projName = req.body.name;
 	let depth = parseInt(req.body.depth) || 2;
 	let url = req.body.url;
 	let screenshots = req.body.screenshots || false;
 
-	let dir = sanitize(projName);
+	dir = sanitize(projName);
 
 	if (!fs.existsSync(dir)){
 	    fs.mkdirSync('screenshots/' + dir);
-	};
+	} else {
+		res.send('Please select another project name, this one already exists');
+	}
 
 	let arr = {
 		sites: [],
@@ -127,13 +131,12 @@ function createScreenshots(arr) {
 	
 	Async.eachOfSeries(arr, makeScreenshot, (err,results) => {
 			console.log(err);
-			console.log('Created screenshots',results);
+			console.log('Created ' + arr.length + ' screenshots');
 	});
 } 
 
 async function makeScreenshot(url) {
 	var index;
-	console.log(path.extname(url));
 	if (path.extname(url) === '.pdf') {
 
 	} else {
@@ -151,10 +154,13 @@ async function makeScreenshot(url) {
 	    }
 		});
 		c.queue(url);
+	  
 	  await page.emulate(iPhone);
 		await page.goto(url, {waitUntil: 'networkidle'});
 		await page.screenshot({
-	  	path: 'screenshots/' + index + '.png',
+	  	path: 'screenshots/' + dir + '/' + index +'.jpeg',
+	  	type: 'jpeg',
+	  	quality: 75,
 	  	fullPage: true
 	  });
 	}
