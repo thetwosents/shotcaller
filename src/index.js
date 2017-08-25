@@ -1,16 +1,16 @@
 
-// Puppeteer
+/* Puppeteer */
 const puppeteer = require('puppeteer');
 const devices = require('puppeteer/DeviceDescriptors');
 const iPhone = devices['iPhone 6'];
 const iPad = devices['iPad Mini'];
 
-// Sitemap tools
+/* Sitemap tools */
 const SitemapStreams = require('sitemap-stream-parser');
 const Sitemapper = require('sitemapper');
 const SitemapGenerator = require('sitemap-generator'); // https://www.npmjs.com/package/sitemap-generator
 
-// Utilities
+/* Utilities */
 const Async = require('async');
 const path = require('path');
 const url = require('url');
@@ -19,19 +19,20 @@ const sanitize = require("sanitize-filename");
 const chalk = require('chalk');
 const log = console.log;
 
-// Express
+/* Express */
 const bodyParser = require('body-parser');
-const express = require('express')
-const app = express()
-app.use(bodyParser.json())
+const express = require('express');
+const app = express();
+app.use(bodyParser.json());
 
-// Init globals
+/* Init globals variables */
 let browser;
 let page;
 let projName;
 let dir;
 let screenshots;
 
+/* Initialize puppeteer */
 (async () => {
   
   browser = await puppeteer.launch({
@@ -42,6 +43,12 @@ let screenshots;
 
 })();
 
+/**
+  @param {string} name
+  @param {int} depth
+  @param {string} url
+  @param {array} screenshots
+*/
 app.post('/generateSitemap', (req,res) => {
 
   projName = req.body.name;
@@ -89,6 +96,9 @@ app.post('/generateSitemap', (req,res) => {
   generator.start();
 });
 
+/**
+  @param {array} screenshots to be made
+*/
 function createScreenshots(arr) {
   log(chalk.blue('Current job ') + arr.length + ' screenshots to be created');
   
@@ -98,10 +108,13 @@ function createScreenshots(arr) {
   });
 } 
 
-
+/**
+  @param {string} name
+  @param {string} url
+  @param {array} screenshots
+*/
 app.post('/singleScreenshot', (req,res) => {
   projName = req.body.name;
-  let depth = parseInt(req.body.depth) || 2;
   let url = req.body.url;
   screenshots = req.body.screenshots || [""];
   
@@ -121,13 +134,15 @@ app.post('/singleScreenshot', (req,res) => {
       log(chalk.green('Finished url: ') + url);
       res.send('Finished');
     } catch(e) {
-      log(e);
+      log(chalk.red(e));
       res.send(e);
     }
   })();
-
 });
 
+/**
+  @param {string} url
+*/
 async function makeScreenshot(url) {
   let fileName;
   if (path.extname(url) === '.pdf') {
@@ -141,52 +156,51 @@ async function makeScreenshot(url) {
     });
 
     if(screenshots.includes('desktop')) {
-  	    if (!fs.existsSync(`screenshots/${dir}/desktop`)) {
-  	    	fs.mkdirSync(`screenshots/${dir}/desktop`);	
-  	    }
-  	    
-  	    await page.setViewport({
-  	      width: 1440,
-  	      height:700
-  	    });
-  	    await page.screenshot({
-  	      path: `screenshots/${dir}/desktop/${fileName}.jpeg`,
-  	      type: 'jpeg',
-  	      quality: 75,
-  	      fullPage: true
-  	    });
-  	}
-	
-  	if(screenshots.includes('mobile')) {
-  	    if (!fs.existsSync(`screenshots/${dir}/mobile`)) {
-  	    	fs.mkdirSync(`screenshots/${dir}/mobile`);	
-  	    }
-  	    
-  	    await page.emulate(iPhone);
-  	    await page.screenshot({
-  	      path: `screenshots/${dir}/mobile/${fileName}.jpeg`,
-  	      type: 'jpeg',
-  	      quality: 75,
-  	      fullPage: true
-  	    });
-  	}
-  	
-  	if(screenshots.includes('tablet')) {
-  	    if (!fs.existsSync(`screenshots/${dir}/tablet`)) {
-  	    	fs.mkdirSync(`screenshots/${dir}/tablet`);	
-  	    }
-  	    
-  	    await page.emulate(iPad);
-  	    await page.screenshot({
-  	      path: `screenshots/${dir}/tablet/${fileName}.jpeg`,
-  	      type: 'jpeg',
-  	      quality: 75,
-  	      fullPage: true
-  	    });
-  	}
+      if (!fs.existsSync(`screenshots/${dir}/desktop`)) {
+        fs.mkdirSync(`screenshots/${dir}/desktop`); 
+      }
+      
+      await page.setViewport({
+        width: 1440,
+        height:700
+      });
+      await page.screenshot({
+        path: `screenshots/${dir}/desktop/${fileName}.jpeg`,
+        type: 'jpeg',
+        quality: 75,
+        fullPage: true
+      });
+    }
+  
+    if(screenshots.includes('mobile')) {
+      if (!fs.existsSync(`screenshots/${dir}/mobile`)) {
+        fs.mkdirSync(`screenshots/${dir}/mobile`);  
+      }
+      
+      await page.emulate(iPhone);
+      await page.screenshot({
+        path: `screenshots/${dir}/mobile/${fileName}.jpeg`,
+        type: 'jpeg',
+        quality: 75,
+        fullPage: true
+      });
+    }
+    
+    if(screenshots.includes('tablet')) {
+      if (!fs.existsSync(`screenshots/${dir}/tablet`)) {
+        fs.mkdirSync(`screenshots/${dir}/tablet`);  
+      }
+      
+      await page.emulate(iPad);
+      await page.screenshot({
+        path: `screenshots/${dir}/tablet/${fileName}.jpeg`,
+        type: 'jpeg',
+        quality: 75,
+        fullPage: true
+      });
+    }
 
     log(`Screenshot ${fileName} was created successfully`);
-	
   }
 }
 
