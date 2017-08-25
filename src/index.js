@@ -97,6 +97,32 @@ function createScreenshots(arr) {
   });
 } 
 
+
+app.post('/singleScreenshot', (req,res) => {
+  projName = req.body.name;
+  let depth = parseInt(req.body.depth) || 2;
+  let url = req.body.url;
+  let screenshots = req.body.screenshots || false;
+  
+  screenshotParams = req.body.screenshots;
+
+  dir = sanitize(projName);
+
+  if (!fs.existsSync('screenshots/' + dir)){
+    fs.mkdirSync('screenshots/' + dir);
+  } else {
+
+  }  
+
+  console.log('Queued');
+
+  (async() => {
+    await makeScreenshot(url);
+    res.send('Finished');
+  })();
+
+});
+
 async function makeScreenshot(url) {
   let index;
   if (path.extname(url) === '.pdf') {
@@ -117,52 +143,56 @@ async function makeScreenshot(url) {
     c.queue(url);
 
     await page.goto(url, {waitUntil: 'networkidle'});
-    
-    if(screenshotParams.includes('desktop')) {
-	    if (!fs.existsSync('screenshots/' + dir + '/' + 'desktop')) {
-	    	fs.mkdirSync('screenshots/' + dir + '/' + 'desktop');	
-	    }
-	    
-	    await page.setViewport({
-	      width: 1440,
-	      height:700
-	    });
+    await page._client.send('Animation.setPlaybackRate', { playbackRate: 12 });
 
-	    await page.screenshot({
-	      path: 'screenshots/' + dir + '/desktop/' + sanitize(index) +'.jpeg',
-	      type: 'jpeg',
-	      quality: 75,
-	      fullPage: true
-	    });
-	}
+    if(screenshotParams.includes('desktop')) {
+  	    if (!fs.existsSync('screenshots/' + dir + '/' + 'desktop')) {
+  	    	fs.mkdirSync('screenshots/' + dir + '/' + 'desktop');	
+  	    }
+  	    
+  	    await page.setViewport({
+  	      width: 1440,
+  	      height:700
+  	    });
+
+  	    await page.screenshot({
+  	      path: 'screenshots/' + dir + '/desktop/' + sanitize(index) +'.jpeg',
+  	      type: 'jpeg',
+  	      quality: 75,
+  	      fullPage: true
+  	    });
+  	}
 	
-	if(screenshotParams.includes('mobile')) {
-	    if (!fs.existsSync('screenshots/' + dir + '/' + 'mobile')) {
-	    	fs.mkdirSync('screenshots/' + dir + '/' + 'mobile');	
-	    }
-	    
-	    await page.emulate(iPhone);
-	    await page.screenshot({
-	      path: 'screenshots/' + dir + '/mobile/' + sanitize(index) +'.jpeg',
-	      type: 'jpeg',
-	      quality: 75,
-	      fullPage: true
-	    });
-	}
-	
-	if(screenshotParams.includes('tablet')) {
-	    if (!fs.existsSync('screenshots/' + dir + '/' + 'tablet')) {
-	    	fs.mkdirSync('screenshots/' + dir + '/' + 'tablet');	
-	    }
-	    
-	    await page.emulate(iPad);
-	    await page.screenshot({
-	      path: 'screenshots/' + dir + '/tablet/' + sanitize(index) +'.jpeg',
-	      type: 'jpeg',
-	      quality: 75,
-	      fullPage: true
-	    });
-	}
+  	if(screenshotParams.includes('mobile')) {
+  	    if (!fs.existsSync('screenshots/' + dir + '/' + 'mobile')) {
+  	    	fs.mkdirSync('screenshots/' + dir + '/' + 'mobile');	
+  	    }
+  	    
+  	    await page.emulate(iPhone);
+        await page.waitFor('footer');
+  	    await page.screenshot({
+  	      path: 'screenshots/' + dir + '/mobile/' + sanitize(index) +'.jpeg',
+  	      type: 'jpeg',
+  	      quality: 75,
+  	      fullPage: true
+  	    });
+  	}
+  	
+  	if(screenshotParams.includes('tablet')) {
+  	    if (!fs.existsSync('screenshots/' + dir + '/' + 'tablet')) {
+  	    	fs.mkdirSync('screenshots/' + dir + '/' + 'tablet');	
+  	    }
+  	    
+  	    await page.emulate(iPad);
+  	    await page.screenshot({
+  	      path: 'screenshots/' + dir + '/tablet/' + sanitize(index) +'.jpeg',
+  	      type: 'jpeg',
+  	      quality: 75,
+  	      fullPage: true
+  	    });
+  	}
+
+    console.log('Screenshot ' + index + ' was created successfully');
 	
   }
 }
