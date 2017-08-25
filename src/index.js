@@ -6,7 +6,6 @@ const iPhone = devices['iPhone 6'];
 const iPad = devices['iPad Mini'];
 
 // Sitemap tools
-const Crawler = require("crawler");
 const SitemapStreams = require('sitemap-stream-parser');
 const Sitemapper = require('sitemapper');
 const SitemapGenerator = require('sitemap-generator'); // https://www.npmjs.com/package/sitemap-generator
@@ -14,8 +13,11 @@ const SitemapGenerator = require('sitemap-generator'); // https://www.npmjs.com/
 // Utilities
 const Async = require('async');
 const path = require('path');
+const url = require('url');
 const fs = require('fs');
 const sanitize = require("sanitize-filename");
+const chalk = require('chalk');
+const log = console.log;
 
 // Express
 const bodyParser = require('body-parser');
@@ -28,7 +30,7 @@ let browser;
 let page;
 let projName;
 let dir;
-let screenshotParams;
+let screenshots;
 
 (async () => {
   
@@ -45,10 +47,8 @@ app.post('/generateSitemap', (req,res) => {
   projName = req.body.name;
   let depth = parseInt(req.body.depth) || 2;
   let url = req.body.url;
-  let screenshots = req.body.screenshots || false;
+  screenshots = req.body.screenshots || [];
   
-  screenshotParams = req.body.screenshots;
-
   dir = sanitize(projName);
 
   if (!fs.existsSync('screenshots/' + dir)){
@@ -58,7 +58,7 @@ app.post('/generateSitemap', (req,res) => {
   }  
 
   let arr = {
-    sites: [],
+    urls: [],
     stats: ''
   };
 
@@ -68,32 +68,33 @@ app.post('/generateSitemap', (req,res) => {
   });
 
   generator.on('add', (url) => {
-    console.log('URL added', url);
-    arr.sites.push(url);
+    log(chalk.green('URL added'), url);
+    arr.urls.push(url);
   });
 
   generator.on('done', (stats) => {
     arr.stats = stats;
-    arr.sites.sort();
-    if (screenshots) {
-      createScreenshots(arr.sites);
+    arr.urls.sort();
+    if (screenshots.length > 0) {
+      createScreenshots(arr.urls);
     }
+    log(chalk.green('Processed ' + arr.urls.length + ' urls'));
     res.send(arr);
   });
 
   generator.on('ignore', (url) => {
-    console.log('ignored',url)
+    log(chalk.yellow('Ignored'),url)
   });
 
   generator.start();
 });
 
 function createScreenshots(arr) {
-  console.log('Current job ' + arr.length + ' screenshots to be created');
+  log(chalk.blue('Current job ') + arr.length + ' screenshots to be created');
   
   Async.eachOfSeries(arr, makeScreenshot, (err,results) => {
-    console.log(err);
-    console.log('Created ' + arr.length + ' screenshots');
+    log(err);
+    log(chalk.green('Created ' + arr.length + ' screenshots'));
   });
 } 
 
@@ -102,10 +103,8 @@ app.post('/singleScreenshot', (req,res) => {
   projName = req.body.name;
   let depth = parseInt(req.body.depth) || 2;
   let url = req.body.url;
-  let screenshots = req.body.screenshots || false;
+  screenshots = req.body.screenshots || [""];
   
-  screenshotParams = req.body.screenshots;
-
   dir = sanitize(projName);
 
   if (!fs.existsSync('screenshots/' + dir)){
@@ -114,85 +113,79 @@ app.post('/singleScreenshot', (req,res) => {
 
   }  
 
-  console.log('Queued');
+  log(chalk.yellow('Queued url: ') + url);
 
   (async() => {
-    await makeScreenshot(url);
-    res.send('Finished');
+    try {
+      await makeScreenshot(url);
+      log(chalk.green('Finished url: ') + url);
+      res.send('Finished');
+    } catch(e) {
+      log(e);
+      res.send(e);
+    }
   })();
 
 });
 
 async function makeScreenshot(url) {
-  let index;
+  let fileName;
   if (path.extname(url) === '.pdf') {
 
   } else {
-    var c = new Crawler({
-      maxConnections : 10,
-      callback : function (error, res, done) {
-        if(error){
-          console.log(error);
-        }else{
-          var $ = res.$;
-          index = $("title").text();
-        }
-        done();
-      }
-    });
-    c.queue(url);
 
     await page.goto(url, {waitUntil: 'networkidle'});
     await page._client.send('Animation.setPlaybackRate', { playbackRate: 12 });
+    await page.title().then((title) => {
+      fileName = sanitize(title);
+    });
 
-    if(screenshotParams.includes('desktop')) {
-  	    if (!fs.existsSync('screenshots/' + dir + '/' + 'desktop')) {
-  	    	fs.mkdirSync('screenshots/' + dir + '/' + 'desktop');	
+    if(screenshots.includes('desktop')) {
+  	    if (!fs.existsSync(`screenshots/${dir}/desktop`)) {
+  	    	fs.mkdirSync(`screenshots/${dir}/desktop`);	
   	    }
   	    
   	    await page.setViewport({
   	      width: 1440,
   	      height:700
   	    });
-
   	    await page.screenshot({
-  	      path: 'screenshots/' + dir + '/desktop/' + sanitize(index) +'.jpeg',
+  	      path: `screenshots/${dir}/desktop/${fileName}.jpeg`,
   	      type: 'jpeg',
   	      quality: 75,
   	      fullPage: true
   	    });
   	}
 	
-  	if(screenshotParams.includes('mobile')) {
-  	    if (!fs.existsSync('screenshots/' + dir + '/' + 'mobile')) {
-  	    	fs.mkdirSync('screenshots/' + dir + '/' + 'mobile');	
+  	if(screenshots.includes('mobile')) {
+  	    if (!fs.existsSync(`screenshots/${dir}/mobile`)) {
+  	    	fs.mkdirSync(`screenshots/${dir}/mobile`);	
   	    }
   	    
   	    await page.emulate(iPhone);
-        await page.waitFor('footer');
   	    await page.screenshot({
-  	      path: 'screenshots/' + dir + '/mobile/' + sanitize(index) +'.jpeg',
+  	      path: `screenshots/${dir}/mobile/${fileName}.jpeg`,
   	      type: 'jpeg',
   	      quality: 75,
   	      fullPage: true
   	    });
   	}
   	
-  	if(screenshotParams.includes('tablet')) {
-  	    if (!fs.existsSync('screenshots/' + dir + '/' + 'tablet')) {
-  	    	fs.mkdirSync('screenshots/' + dir + '/' + 'tablet');	
+  	if(screenshots.includes('tablet')) {
+  	    if (!fs.existsSync(`screenshots/${dir}/tablet`)) {
+  	    	fs.mkdirSync(`screenshots/${dir}/tablet`);	
   	    }
   	    
   	    await page.emulate(iPad);
   	    await page.screenshot({
-  	      path: 'screenshots/' + dir + '/tablet/' + sanitize(index) +'.jpeg',
+  	      path: `screenshots/${dir}/tablet/${fileName}.jpeg`,
   	      type: 'jpeg',
   	      quality: 75,
   	      fullPage: true
   	    });
   	}
 
-    console.log('Screenshot ' + index + ' was created successfully');
+    log(`Screenshot ${fileName} was created successfully`);
 	
   }
 }
@@ -202,5 +195,5 @@ app.post('/', function (req, res) {
 })
 
 app.listen(3000, function () {
-  console.log('Example app listening on port 3000!')
+  log('Anddddddddddd go!')
 })
